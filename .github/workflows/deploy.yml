@@ -21,27 +21,28 @@ jobs:
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Descompactar dashboard
+      - name: Preparar dashboard para publicação
         run: |
-          rm -rf extracted _site
-          mkdir -p extracted _site
+          rm -rf _site
+          mkdir -p _site
 
-          unzip -q dashboard-wasm-teste.zip -d extracted
+          cp -a index.html _site/
+          cp -a assets _site/
+          cp -a public _site/
 
-          INDEX_FILE=$(find extracted -type f -name "index.html" -print -quit)
-
-          if [ -z "$INDEX_FILE" ]; then
-            echo "ERRO: index.html não encontrado no ZIP."
+          if [ ! -f "_site/index.html" ]; then
+            echo "ERRO: index.html não encontrado."
             exit 1
           fi
 
-          DASHBOARD_DIR=$(dirname "$INDEX_FILE")
+          if [ ! -f "_site/public/PROMESSAS_20262609.csv" ]; then
+            echo "ERRO: base PROMESSAS_20262609.csv não encontrada."
+            exit 1
+          fi
 
-          cp -R "$DASHBOARD_DIR"/. _site/
-
-          echo "Dashboard publicado a partir de: $DASHBOARD_DIR"
-          echo "Arquivos:"
-          find _site -maxdepth 2 -type f | head -30
+          echo "Dashboard preparado."
+          echo "Tamanho:"
+          du -sh _site
 
       - name: Fazer upload do site
         uses: actions/upload-pages-artifact@v4
