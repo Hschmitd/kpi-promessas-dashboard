@@ -1,0 +1,62 @@
+name: Publicar dashboard
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Descompactar dashboard
+        run: |
+          rm -rf extracted _site
+          mkdir -p extracted _site
+
+          unzip -q dashboard-wasm-teste.zip -d extracted
+
+          INDEX_FILE=$(find extracted -type f -name "index.html" -print -quit)
+
+          if [ -z "$INDEX_FILE" ]; then
+            echo "ERRO: index.html não encontrado no ZIP."
+            exit 1
+          fi
+
+          DASHBOARD_DIR=$(dirname "$INDEX_FILE")
+
+          cp -R "$DASHBOARD_DIR"/. _site/
+
+          echo "Dashboard publicado a partir de: $DASHBOARD_DIR"
+          echo "Arquivos:"
+          find _site -maxdepth 2 -type f | head -30
+
+      - name: Fazer upload do site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: "_site"
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
